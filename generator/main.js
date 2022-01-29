@@ -1,8 +1,8 @@
 const Moralis = require("moralis/node");
 const { timer } = require("rxjs");
 
-const serverUrl = ""; //Moralis Server Url here
-const appId = ""; //Moralis Server App ID here
+const serverUrl = "https://pnfj0jfdznix.usemoralis.com:2053/server"; //Moralis Server Url here
+const appId = "5LwdAhzzsp6voY22XFuDJ94tg1NOqlOvqS5w5syP"; //Moralis Server App ID here
 Moralis.start({ serverUrl, appId });
 
 const resolveLink = (url) => {
@@ -10,12 +10,13 @@ const resolveLink = (url) => {
   return url.replace("ipfs://", "https://gateway.ipfs.io/ipfs/");
 };
 
-const collectionAddress = ""; //Collection Address Here
-const collectionName = ""; //CollectioonName Here
+const collectionAddress = "0xB382Fcd0263f4e338437F3e9DdB445063A818D6c"; //Collection Address Here
+const collectionName = "CSSC"; //CollectioonName Here
 
 async function generateRarity() {
   const NFTs = await Moralis.Web3API.token.getAllTokenIds({
     address: collectionAddress,
+    chain: "bsc"
   });
 
   const totalNum = NFTs.total;
@@ -23,6 +24,7 @@ async function generateRarity() {
   console.log(totalNum);
   console.log(pageSize);
   let allNFTs = NFTs.result;
+  console.log(allNFTs);
 
   const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -32,6 +34,7 @@ async function generateRarity() {
       offset: i,
     });
     allNFTs = allNFTs.concat(NFTs.result);
+    console.log(allNFTs);
     await timer(6000);
   }
 
@@ -146,10 +149,10 @@ async function generateRarity() {
     await newObject.save();
     console.log(i);
   }
-  
+
   return true
 }
 
 generateRarity()
-.then( ( result ) => { console.log( result ) } )
-.catch( ( error ) => { console.log( error ) } )
+  .then((result) => { console.log(result) })
+  .catch((error) => { console.log(error) })

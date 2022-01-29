@@ -101,7 +101,7 @@ function HomePage() {
             placeholder="Select Collection"
             onChange={(e) => collectionChanged(e)}
           >
-            {/* Your Option Here ---MAKE SURE VALUE CORRESPONDS TO MORALIS DB CLASS NAME */}
+            <Option value="CSSC"></Option>
           </Select>
           <Search
             style={{ width: "250px" }}
@@ -232,10 +232,10 @@ function HomePage() {
                               width: "60px",
                             }}
                           >
-                            {e.trait_type === "TraitCount" ? 
-                            ((8* (10000 / e.rarityScore)).toFixed(0)) :  //Only use this if rarity generator adjusted to 8x traitcount
-                            ((10000 / e.rarityScore).toFixed(0))         //Also must be adjusted for collections with +- 10000 NFTs
-                            }  
+                            {e.trait_type === "TraitCount" ?
+                              ((8 * (10000 / e.rarityScore)).toFixed(0)) :  //Only use this if rarity generator adjusted to 8x traitcount
+                              ((10000 / e.rarityScore).toFixed(0))         //Also must be adjusted for collections with +- 10000 NFTs
+                            }
                           </Button>
                         }
                       />
