@@ -1,8 +1,10 @@
 const Moralis = require("moralis/node");
 const { timer } = require("rxjs");
+const allNFTFromFile = require('../cssc-metadata.json')
+const fs = require('fs');
 
-const serverUrl = "https://pnfj0jfdznix.usemoralis.com:2053/server"; //Moralis Server Url here
-const appId = "5LwdAhzzsp6voY22XFuDJ94tg1NOqlOvqS5w5syP"; //Moralis Server App ID here
+const serverUrl = "https://symwnrkbjhdg.usemoralis.com:2053/server"; //Moralis Server Url here
+const appId = "3FFjNCw5XPfTp9IB8i5iiISrdERpT4B75IW8sB4e"; //Moralis Server App ID here
 Moralis.start({ serverUrl, appId });
 
 const resolveLink = (url) => {
@@ -12,6 +14,30 @@ const resolveLink = (url) => {
 
 const collectionAddress = "0xB382Fcd0263f4e338437F3e9DdB445063A818D6c"; //Collection Address Here
 const collectionName = "CSSC"; //CollectioonName Here
+
+
+function getSeatWeight(val) {
+  // eslint-disable-next-line default-case
+  switch (val) {
+    case 'HOUSE':
+      return 500;
+    case 'BOX':
+      return 250
+    case 'BALCONY':
+      return 150;
+    case 'STALL':
+      return 100;
+  }
+}
+
+function getSeatMultiplier(current) {
+  for (let i = 0; i < current.length; i++) {
+    if (current[i].trait_type === 'Seat') {
+      const seatVal = current[i].value;
+      return getSeatWeight(seatVal);
+    }
+  }
+}
 
 async function generateRarity() {
   const NFTs = await Moralis.Web3API.token.getAllTokenIds({
@@ -38,7 +64,8 @@ async function generateRarity() {
     await timer(6000);
   }
 
-  let metadata = allNFTs.map((e) => JSON.parse(e.metadata).attributes);
+  // let metadata1 = allNFTs.map((e) => JSON.parse(e.metadata).attributes);
+  let metadata = allNFTFromFile.map((e) => e.attributes);
 
   let tally = { TraitCount: {} };
 
@@ -78,13 +105,13 @@ async function generateRarity() {
     let totalRarity = 0;
     for (let i = 0; i < current.length; i++) {
       let rarityScore =
-        1 / (tally[current[i].trait_type][current[i].value] / totalNum);
+        1 / (tally[current[i].trait_type][current[i].value] / (totalNum * getSeatMultiplier(current)));
       current[i].rarityScore = rarityScore;
       totalRarity += rarityScore;
     }
 
-    let rarityScoreNumTraits =
-      8 * (1 / (tally.TraitCount[Object.keys(current).length] / totalNum));
+
+    let rarityScoreNumTraits = (1 / (tally.TraitCount[Object.keys(current).length] / totalNum));
     current.push({
       trait_type: "TraitCount",
       value: Object.keys(current).length,
@@ -110,45 +137,56 @@ async function generateRarity() {
       });
     }
 
-    if (allNFTs[j].metadata) {
-      allNFTs[j].metadata = JSON.parse(allNFTs[j].metadata);
-      allNFTs[j].image = resolveLink(allNFTs[j].metadata.image);
-    } else if (allNFTs[j].token_uri) {
-      try {
-        await fetch(allNFTs[j].token_uri)
-          .then((response) => response.json())
-          .then((data) => {
-            allNFTs[j].image = resolveLink(data.image);
-          });
-      } catch (error) {
-        console.log(error);
-      }
-    }
+    // if (allNFTs[j].metadata) {
+    //   allNFTs[j].metadata = JSON.parse(allNFTs[j].metadata);
+    //   allNFTs[j].image = resolveLink(allNFTs[j].metadata.image);
+    // } else if (allNFTs[j].token_uri) {
+    //   try {
+    //     await fetch(allNFTs[j].token_uri)
+    //       .then((response) => response.json())
+    //       .then((data) => {
+    //         allNFTs[j].image = resolveLink(data.image);
+    //       });
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // }
 
     nftArr.push({
       Attributes: current,
       Rarity: totalRarity,
-      token_id: allNFTs[j].token_id,
-      image: allNFTs[j].image,
+      token_id: allNFTFromFile[j].name.split('STAR #')[1],
+      // image: allNFTs[j].image,
     });
   }
 
   nftArr.sort((a, b) => b.Rarity - a.Rarity);
 
   for (let i = 0; i < nftArr.length; i++) {
-    nftArr[i].Rank = i + 1;
-    const newClass = Moralis.Object.extend(collectionName);
-    const newObject = new newClass();
-
-    newObject.set("attributes", nftArr[i].Attributes);
-    newObject.set("rarity", nftArr[i].Rarity);
-    newObject.set("tokenId", nftArr[i].token_id);
-    newObject.set("rank", nftArr[i].Rank);
-    newObject.set("image", nftArr[i].image);
-
-    await newObject.save();
-    console.log(i);
+    nftArr[i]['Rank'] = i + 1;
   }
+
+  //write
+  fs.writeFile('rarity-rank.json', JSON.stringify(nftArr), (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log("JSON data is saved.");
+  });
+  // for (let i = 0; i < nftArr.length; i++) {
+  //   nftArr[i].Rank = i + 1;
+  //   const newClass = Moralis.Object.extend(collectionName);
+  //   const newObject = new newClass();
+
+  //   newObject.set("attributes", nftArr[i].Attributes);
+  //   newObject.set("rarity", nftArr[i].Rarity);
+  //   newObject.set("tokenId", nftArr[i].token_id);
+  //   newObject.set("rank", nftArr[i].Rank);
+  //   newObject.set("image", nftArr[i].image);
+
+  //   await newObject.save();
+  //   console.log(i);
+  // }
 
   return true
 }
